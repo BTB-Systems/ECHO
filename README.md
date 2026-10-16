@@ -1,5 +1,9 @@
 # ECHO: Mental Health Coach & Mentor (Standalone iPhone Application)
 
+<p align="center">
+  <img src="screenshot.png" alt="ECHO Mental Health Coach & Mentor Interface" width="360" />
+</p>
+
 ## 1.0 Executive Operational Context
 
 * **System Name:** ECHO // CLI Mental Health Coach & Mentor
