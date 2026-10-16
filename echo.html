@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ECHO">
+  <meta name="theme-color" content="#000000">
+
+  <!-- PWA Manifest & iOS App Icons -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="shortcut icon" href="icons/icon.svg">
+<title>ECHO: Mental Health Coach &amp; Mentor</title>
+<style>
+  :root { 
+    --term-colour: #00ff00; 
+    --term-rgb: 0, 255, 0;
+    --bg-colour: #000000; 
+    --surface-colour: #111113;
+    --card-colour: #1c1c1e; 
+    --border-colour: #2c2c2e;
+  }
+  
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body { 
+    margin: 0; 
+    padding: 0; 
+    width: 100%;
+    height: 100%; 
+    background: var(--bg-colour); 
+    color: #ffffff; 
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; 
+    overflow: hidden; 
+    overscroll-behavior-y: none; 
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  /* 100dvh Flexbox architecture guarantees iOS keyboard never covers the input */
+  #app-container { 
+    display: flex; 
+    flex-direction: column; 
+    width: 100%;
+    height: 100dvh; 
+    padding-top: env(safe-area-inset-top);
+    background: var(--bg-colour);
+  }
+
+  /* Subtle Top Utility Bar */
+  .top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: #070708;
+    border-bottom: 1px solid #1f1f22;
+    flex-shrink: 0;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--term-colour);
+    letter-spacing: 0.5px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--term-colour);
+    box-shadow: 0 0 8px var(--term-colour);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .quick-action-btn {
+    background: rgba(var(--term-rgb), 0.1);
+    color: var(--term-colour);
+    border: 1px solid rgba(var(--term-rgb), 0.35);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+  }
+
+  .quick-action-btn:active {
+    background: var(--term-colour);
+    color: #000;
+  }
+  
+  /* Tab Views */
+  .tab-content { 
+    flex: 1; 
+    display: none; 
+    overflow-y: auto; 
+    padding: 16px; 
+    -webkit-overflow-scrolling: touch; 
+    scroll-behavior: smooth;
+  }
+  
+  .tab-content.active { 
+    display: flex; 
+    flex-direction: column; 
+  }
+  
+  /* Chat / Terminal Area */
+  #tab-chat { 
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace; 
+    padding-bottom: 8px;
+  }
+
+  .banner-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+  }
+
+  .banner { 
+    color: var(--term-colour); 
+    white-space: pre; 
+    font-size: clamp(7.5px, 2.2vw, 11px); 
+    line-height: 1.15; 
+    font-weight: bold; 
+    text-shadow: 0 0 6px rgba(var(--term-rgb), 0.25);
+  }
+
+  #chat-history {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 14px;
+  }
+
+  .message { 
+    line-height: 1.5; 
+    font-size: 14.5px; 
+    word-wrap: break-word; 
+    max-width: 92%;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-system { 
+    color: var(--term-colour); 
+    align-self: flex-start;
+    background: rgba(var(--term-rgb), 0.06);
+    border-left: 2px solid var(--term-colour);
+    padding: 10px 14px;
+    border-radius: 4px 10px 10px 4px;
+    user-select: text; 
+    -webkit-user-select: text;
+  }
+
+  .msg-user { 
+    color: #ffffff; 
+    background: #242428; 
+    border: 1px solid #3a3a3f;
+    padding: 10px 14px; 
+    border-radius: 12px 12px 2px 12px; 
+    align-self: flex-end; 
+    max-width: 84%;
+    user-select: text; 
+    -webkit-user-select: text;
+  }
+
+  .prominent-question { 
+    font-size: 1.2em; 
+    font-weight: bold; 
+    display: block; 
+    margin-top: 14px; 
+    padding-top: 10px;
+    border-top: 1px dashed rgba(var(--term-rgb), 0.3);
+    color: var(--term-colour);
+  }
+
+  /* Quick Grounding Chips */
+  .chips-bar {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 8px 12px;
+    background: #08080a;
+    border-top: 1px solid #1a1a1d;
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .chips-bar::-webkit-scrollbar { display: none; }
+
+  .prompt-chip {
+    background: #141417;
+    color: #d1d1d6;
+    border: 1px solid #2c2c30;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 11.5px;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+  .prompt-chip:active {
+    background: rgba(var(--term-rgb), 0.2);
+    border-color: var(--term-colour);
+    color: var(--term-colour);
+  }
+
+  /* Input Field */
+  .input-area { 
+    background: var(--surface-colour); 
+    padding: 10px 12px; 
+    display: none; 
+    gap: 8px; 
+    border-top: 1px solid var(--border-colour); 
+    flex-shrink: 0; 
+  }
+  .input-area.active { display: flex; }
+  
+  .input-area input { 
+    flex: 1; 
+    background: #000000; 
+    border: 1px solid var(--term-colour); 
+    color: var(--term-colour); 
+    padding: 12px 14px; 
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace; 
+    outline: none; 
+    border-radius: 8px; 
+    font-size: 16px; /* Prevents iOS auto-zoom */
+    -webkit-user-select: text; 
+    user-select: text; 
+  }
+  .input-area input::placeholder { color: rgba(255,255,255,0.35); }
+  
+  .input-area button { 
+    background: var(--term-colour); 
+    color: #000000; 
+    border: none; 
+    padding: 0 20px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    border-radius: 8px; 
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace; 
+    font-size: 15px; 
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+  }
+  .input-area button:active { opacity: 0.75; }
+  .input-area button:disabled { opacity: 0.4; cursor: not-allowed; }
+  
+  /* Assessments & Settings Shared Layout */
+  .section-header {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 4px 0 14px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-colour);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .sub-header {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #8e8e93;
+    margin: 22px 0 10px 0;
+    font-weight: 600;
+  }
+
+  .list-item { 
+    background: var(--card-colour); 
+    padding: 16px; 
+    border-radius: 12px; 
+    margin-bottom: 12px; 
+    cursor: pointer; 
+    border: 1px solid var(--border-colour); 
+    transition: transform 0.1s ease, border-color 0.15s ease;
+  }
+  .list-item:active { 
+    background: #262629; 
+    border-color: var(--term-colour); 
+    transform: scale(0.99);
+  }
+  .list-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .list-item h3 { 
+    margin: 0; 
+    font-size: 17px; 
+    color: var(--term-colour); 
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  }
+  .list-item p { 
+    margin: 0; 
+    color: #a1a1a6; 
+    font-size: 14px; 
+    line-height: 1.35;
+  }
+  .badge {
+    font-size: 11px;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    background: rgba(var(--term-rgb), 0.12);
+    color: var(--term-colour);
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(var(--term-rgb), 0.3);
+  }
+  
+  /* Assessment Questionnaire Engine */
+  #assessment-engine { display: none; padding-bottom: 30px; }
+  
+  .back-btn { 
+    background: #1c1c1e; 
+    color: var(--term-colour); 
+    border: 1px solid var(--term-colour); 
+    padding: 8px 14px; 
+    border-radius: 8px; 
+    font-size: 14px; 
+    font-weight: 600;
+    cursor: pointer; 
+    margin-bottom: 16px; 
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace; 
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .question-block { 
+    background: #121214; 
+    padding: 16px; 
+    border-radius: 12px; 
+    margin-bottom: 16px; 
+    border: 1px solid var(--border-colour); 
+  }
+  .question-text { 
+    font-size: 15.5px; 
+    margin-bottom: 12px; 
+    font-weight: 600; 
+    line-height: 1.4;
+    color: #f2f2f7;
+  }
+  .option-label { 
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+    background: #1e1e22; 
+    padding: 12px 14px; 
+    margin-bottom: 8px; 
+    border-radius: 8px; 
+    font-size: 14.5px; 
+    cursor: pointer; 
+    border: 1px solid #2e2e34; 
+    transition: all 0.15s ease;
+  }
+  .option-label:last-child { margin-bottom: 0; }
+  .option-label input { display: none; }
+  .option-label.selected { 
+    background: var(--term-colour); 
+    color: #000000; 
+    font-weight: 700; 
+    border-color: var(--term-colour);
+  }
+  .option-score-tag {
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 12px;
+    opacity: 0.65;
+  }
+
+  .submit-assessment { 
+    width: 100%; 
+    background: var(--term-colour); 
+    color: #000000; 
+    border: none; 
+    padding: 16px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    border-radius: 10px; 
+    font-size: 16px; 
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace; 
+    margin-top: 8px; 
+  }
+
+  .result-box { 
+    background: var(--card-colour); 
+    padding: 24px 20px; 
+    border-radius: 14px; 
+    text-align: center; 
+    margin-top: 12px; 
+    border: 1px solid var(--term-colour); 
+  }
+  .result-score { 
+    font-size: 42px; 
+    font-weight: 800; 
+    color: var(--term-colour); 
+    margin: 8px 0; 
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  }
+  .result-severity { 
+    font-size: 19px; 
+    font-weight: 700;
+    margin-bottom: 12px; 
+    color: #ffffff;
+  }
+
+  /* Assessment History Log */
+  .history-card {
+    background: #141416;
+    border: 1px solid #28282c;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .history-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .history-title {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--term-colour);
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  }
+  .history-severity {
+    font-size: 13.5px;
+    color: #e5e5ea;
+  }
+  .history-date {
+    font-size: 11.5px;
+    color: #8e8e93;
+  }
+  .history-score-pill {
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    background: #222226;
+    color: var(--term-colour);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(var(--term-rgb), 0.3);
+    min-width: 64px;
+    text-align: center;
+  }
+  .secondary-btn {
+    background: #242428;
+    color: #ebebf5;
+    border: 1px solid #3a3a3e;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 8px;
+  }
+  .secondary-btn.danger {
+    color: #ff453a;
+    border-color: rgba(255, 69, 58, 0.35);
+  }
+  
+  /* Settings & Export Cards */
+  .settings-card {
+    background: var(--card-colour);
+    padding: 18px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-colour);
+  }
+  .settings-card h3 {
+    margin: 0 0 6px 0;
+    font-size: 17px;
+    color: #ffffff;
+  }
+  .settings-card p {
+    margin: 0 0 14px 0;
+    color: #a1a1a6;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+
+  .colour-swatches {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px 0;
+  }
+
+  .colour-btn { 
+    width: 44px; 
+    height: 44px; 
+    border-radius: 22px; 
+    cursor: pointer; 
+    border: 3px solid transparent; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .colour-btn.active { 
+    border-color: #ffffff; 
+    transform: scale(1.15); 
+  }
+
+  .export-primary-btn {
+    width: 100%;
+    background: var(--term-colour);
+    color: #000000;
+    border: none;
+    padding: 15px 18px;
+    border-radius: 10px;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 14.5px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(var(--term-rgb), 0.25);
+  }
+  .export-primary-btn:active {
+    opacity: 0.85;
+  }
+
+  .steps-list {
+    margin: 14px 0 0 0;
+    padding-left: 20px;
+    color: #d1d1d6;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .steps-list li {
+    margin-bottom: 8px;
+  }
+  .steps-list strong {
+    color: var(--term-colour);
+  }
+  
+  /* Bottom Navigation */
+  .bottom-nav { 
+    background: var(--surface-colour); 
+    display: flex; 
+    justify-content: space-around; 
+    align-items: center; 
+    border-top: 1px solid var(--border-colour); 
+    flex-shrink: 0; 
+    padding-bottom: env(safe-area-inset-bottom); 
+    height: calc(58px + env(safe-area-inset-bottom)); 
+    user-select: none; 
+    -webkit-user-select: none;
+  }
+  .nav-item { 
+    color: #8e8e93; 
+    text-decoration: none; 
+    font-size: 11px; 
+    font-weight: 600;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    width: 33.33%; 
+    text-align: center; 
+    height: 100%; 
+    transition: color 0.15s ease;
+  }
+  .nav-item.active { color: var(--term-colour); }
+  .nav-icon { font-size: 19px; margin-bottom: 3px; font-family: monospace; font-weight: bold; }
+
+  /* Modal Overlay for Install Instructions */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    z-index: 2000;
+  }
+  .modal-overlay.active {
+    display: flex;
+  }
+  .modal-card {
+    background: #18181b;
+    border: 1px solid var(--term-colour);
+    border-radius: 16px;
+    max-width: 420px;
+    width: 100%;
+    padding: 22px;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.8);
+    animation: fadeIn 0.2s ease-out;
+  }
+  .modal-card h3 {
+    margin: 0 0 10px 0;
+    color: var(--term-colour);
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 17px;
+  }
+  .modal-card p {
+    font-size: 13.5px;
+    color: #d1d1d6;
+    line-height: 1.45;
+    margin: 0 0 12px 0;
+  }
+
+  /* Toast Notification */
+  #toast-container {
+    position: fixed;
+    top: calc(16px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    width: 90%;
+    max-width: 360px;
+  }
+  .toast {
+    background: var(--term-colour);
+    color: #000000;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  /* Typing Pulse */
+  .loader-dots {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    padding: 4px 2px;
+  }
+  .loader-dots span {
+    width: 7px;
+    height: 7px;
+    background-color: var(--term-colour);
+    border-radius: 50%;
+    animation: pulse 0.9s infinite alternate;
+  }
+  .loader-dots span:nth-child(2) { animation-delay: 0.25s; }
+  .loader-dots span:nth-child(3) { animation-delay: 0.5s; }
+  @keyframes pulse { 
+    from { opacity: 0.25; transform: scale(0.8); } 
+    to { opacity: 1; transform: scale(1.15); } 
+  }
+</style>
+</head>
+<body>
+  <div id="toast-container"></div>
+
+  <!-- Export / iPhone Install Instructions Modal -->
+  <div id="install-modal" class="modal-overlay" onclick="closeInstallModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <h3>✓ echo.html Downloaded</h3>
+      <p>To run ECHO on your iPhone 100% independently as a full-screen native-style app:</p>
+      <ol class="steps-list">
+        <li>Open the <strong>Files</strong> app on your iPhone and go to your <strong>Downloads</strong> folder (or tap the download arrow in your browser).</li>
+        <li>Tap <strong>echo.html</strong>. If it opens in a quick-look preview, tap the <strong>Share</strong> icon and choose <strong>Open in Safari</strong> (or save to iCloud Drive and open via Safari).</li>
+        <li>Once open in <strong>Safari</strong>, tap the bottom <strong>Share</strong> button (square with an upward arrow).</li>
+        <li>Scroll down and tap <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.</li>
+      </ol>
+      <p style="margin-top: 12px; font-size: 12px; color: #8e8e93;">Launching ECHO from your Home Screen removes all browser bars and runs completely offline.</p>
+      <button class="submit-assessment" style="margin-top: 10px; padding: 12px;" onclick="closeInstallModal()">Got It</button>
+    </div>
+  </div>
+
+  <div id="app-container">
+    
+    <!-- Subtle Top Bar with Quick Export Action -->
+    <header class="top-header">
+      <div class="header-brand">
+        <span class="status-dot"></span>
+        <span>ECHO // CLI COACH</span>
+      </div>
+      <div class="header-actions">
+        <button class="quick-action-btn" onclick="resetConversation()" title="Reset Session">
+          <span>↺ Reset</span>
+        </button>
+        <button class="quick-action-btn" onclick="downloadStandaloneApp()" title="Download Standalone App (echo.html)">
+          <span>⬇ Export App</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB 1: ECHO Conversational Coach -->
+    <div id="tab-chat" class="tab-content active">
+      <div class="banner-wrapper">
+        <div class="banner">================================================================================
+  ███████╗ ██████╗██╗  ██╗ ██████╗ 
+  ██╔════╝██╔════╝██║  ██║██╔═══██╗
+  █████╗  ██║     ███████║██║   ██║
+  ██╔══╝  ██║     ██╔══██║██║   ██║
+  ███████╗╚██████╗██║  ██║╚██████╔╝
+  ╚══════╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝ 
+  ECHO: Mental Health Coach &amp; Mentor
+================================================================================</div>
+      </div>
+
+      <div id="chat-history"><div class="message msg-system">Initialising ECHO...<br><br>Welcome. Please note: I am a supportive conversational tool and not a substitute for professional healthcare or therapy.<span class="prominent-question">How can I help you today?</span></div></div>
+
+      <div id="scroll-anchor" style="height: 14px; width: 100%; flex-shrink: 0;"></div>
+    </div>
+
+    <!-- Quick Reflection / Grounding Chips -->
+    <div id="chat-chips-bar" class="chips-bar" style="display: flex;">
+      <button class="prompt-chip" onclick="triggerQuickPrompt('I feel anxious and overwhelmed')">Feeling anxious</button>
+      <button class="prompt-chip" onclick="triggerQuickPrompt('My thoughts are spiralling')">Thoughts spiralling</button>
+      <button class="prompt-chip" onclick="triggerQuickPrompt('5-4-3-2-1 sensory grounding')">5-4-3-2-1 Grounding</button>
+      <button class="prompt-chip" onclick="triggerQuickPrompt('Guide me through box breathing')">Box breathing</button>
+      <button class="prompt-chip" onclick="triggerQuickPrompt('Work is really stressful today')">Work stress</button>
+      <button class="prompt-chip" onclick="triggerQuickPrompt('I am feeling low and tired')">Feeling low / tired</button>
+    </div>
+    
+    <!-- Chat Input Bar -->
+    <div id="chat-input-area" class="input-area active">
+      <input type="text" id="chat-input" placeholder="Share what is on your mind..." onkeypress="handleEnter(event)" autocomplete="off">
+      <button id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+    
+    <!-- TAB 2: Clinical Assessments & Local History -->
+    <div id="tab-assessments" class="tab-content">
+      <div id="assessment-list">
+        <div class="section-header">
+          <span>Clinical Tools</span>
+        </div>
+        <p style="color: #8e8e93; font-size: 13.5px; margin-top: -6px; margin-bottom: 16px;">
+          Standardised self-report questionnaires for tracking your baseline wellbeing. All scores are saved privately on your device.
+        </p>
+
+        <div class="list-item" onclick="loadAssessment('phq9')">
+          <div class="list-item-header">
+            <h3>PHQ-9</h3>
+            <span class="badge">9 Items • 0–27</span>
+          </div>
+          <p>Patient Health Questionnaire — Depression Severity</p>
+        </div>
+
+        <div class="list-item" onclick="loadAssessment('gad7')">
+          <div class="list-item-header">
+            <h3>GAD-7</h3>
+            <span class="badge">7 Items • 0–21</span>
+          </div>
+          <p>Generalised Anxiety Disorder Assessment</p>
+        </div>
+
+        <div class="list-item" onclick="loadAssessment('ghq12')">
+          <div class="list-item-header">
+            <h3>GHQ-12</h3>
+            <span class="badge">12 Items • 0–36</span>
+          </div>
+          <p>General Health Questionnaire (Likert 0–3 Scoring)</p>
+        </div>
+
+        <!-- Saved Assessment History Log -->
+        <div class="sub-header">Saved Assessment History</div>
+        <div id="assessment-history-container">
+          <div style="background: #121214; border: 1px dashed #2c2c30; border-radius: 10px; padding: 18px; text-align: center; color: #8e8e93; font-size: 13.5px;">
+            No completed assessments saved yet. Complete a questionnaire above to log your baseline.
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Questionnaire View -->
+      <div id="assessment-engine">
+        <button class="back-btn" onclick="showAssessmentList()">← Back to Tools</button>
+        <div class="section-header" style="margin-top: 0;">
+          <span id="assessment-title">Title</span>
+        </div>
+        <p id="assessment-desc" style="color: #a1a1a6; font-size: 14px; margin-bottom: 18px; line-height: 1.4;"></p>
+        <div id="assessment-form"></div>
+        <button class="submit-assessment" id="submit-assessment-btn" onclick="calculateScore()">Calculate &amp; Save Score</button>
+        <div id="assessment-result" style="display: none;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Settings & Standalone iPhone Exporter -->
+    <div id="tab-settings" class="tab-content">
+      <div class="section-header">
+        <span>Settings &amp; Export</span>
+      </div>
+
+      <!-- Export / Install Card -->
+      <div class="settings-card">
+        <h3>Run Independently on iPhone</h3>
+        <p>Export ECHO as a single, self-contained HTML file to install onto your iPhone Home Screen outside of any preview wrapper.</p>
+        <button class="export-primary-btn" onclick="downloadStandaloneApp()">
+          <span>⬇ Download Standalone App (echo.html)</span>
+        </button>
+        <ol class="steps-list">
+          <li>Tap the button above to download <strong>echo.html</strong>.</li>
+          <li>Open the downloaded file in <strong>iOS Safari</strong> (via your Downloads menu or the iOS <strong>Files</strong> app).</li>
+          <li>Tap the <strong>Share</strong> icon at the bottom of Safari and select <strong>Add to Home Screen</strong>.</li>
+        </ol>
+      </div>
+
+      <!-- Colour Profile Card -->
+      <div class="settings-card">
+        <h3>Terminal Colour Profile</h3>
+        <p>Select your preferred high-contrast interface typography colour. Automatically saved to your device.</p>
+        <div class="colour-swatches">
+          <div class="colour-btn active" data-hex="#00ff00" data-rgb="0, 255, 0" style="background: #00ff00;" onclick="setColour('#00ff00', '0, 255, 0', this)" title="Terminal Green"></div>
+          <div class="colour-btn" data-hex="#ffbf00" data-rgb="255, 191, 0" style="background: #ffbf00;" onclick="setColour('#ffbf00', '255, 191, 0', this)" title="Amber"></div>
+          <div class="colour-btn" data-hex="#ff3b30" data-rgb="255, 59, 48" style="background: #ff3b30;" onclick="setColour('#ff3b30', '255, 59, 48', this)" title="Crimson Red"></div>
+          <div class="colour-btn" data-hex="#32ade6" data-rgb="50, 173, 230" style="background: #32ade6;" onclick="setColour('#32ade6', '50, 173, 230', this)" title="Cyan"></div>
+          <div class="colour-btn" data-hex="#ffffff" data-rgb="255, 255, 255" style="background: #ffffff;" onclick="setColour('#ffffff', '255, 255, 255', this)" title="Pure White"></div>
+        </div>
+      </div>
+
+      <!-- Core Directives & Boundaries Info -->
+      <div class="settings-card">
+        <h3>Clinical Boundaries &amp; Privacy</h3>
+        <p style="margin-bottom: 0;">
+          ECHO operates 100% locally on your device using a structured mindfulness and grounding routing engine. No conversation data or assessment scores ever leave your phone. ECHO is not a replacement for professional medical advice, diagnosis, or therapy.
+        </p>
+      </div>
+    </div>
+    
+    <!-- Bottom Tab Navigation -->
+    <nav class="bottom-nav">
+      <div class="nav-item active" id="nav-chat" onclick="switchTab('chat', this)">
+        <div class="nav-icon">&gt;_</div>
+        <span>ECHO</span>
+      </div>
+      <div class="nav-item" id="nav-assessments" onclick="switchTab('assessments', this)">
+        <div class="nav-icon">[≡]</div>
+        <span>Assessments</span>
+      </div>
+      <div class="nav-item" id="nav-settings" onclick="switchTab('settings', this)">
+        <div class="nav-icon">⚙</div>
+        <span>Settings</span>
+      </div>
+    </nav>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. INITIALISATION & LOCAL STORAGE PERSISTENCE
+    // =========================================================================
+    const STORAGE_KEYS = {
+      COLOUR_HEX: 'echo_theme_hex',
+      COLOUR_RGB: 'echo_theme_rgb',
+      ASSESSMENT_HISTORY: 'echo_assessment_history_v1'
+    };
+
+    const initialGreetingHTML = `Initialising ECHO...<br><br>Welcome. Please note: I am a supportive conversational tool and not a substitute for professional healthcare or therapy.<span class="prominent-question">How can I help you today?</span>`;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedTheme();
+      renderAssessmentHistory();
+      scrollToBottom();
+    });
+
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 3000);
+    }
+
+    // =========================================================================
+    // 2. TAB NAVIGATION & THEME ENGINE
+    // =========================================================================
+    function switchTab(tabId, element) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+      
+      document.getElementById('tab-' + tabId).classList.add('active');
+      if (element) element.classList.add('active');
+      
+      const inputArea = document.getElementById('chat-input-area');
+      const chipsBar = document.getElementById('chat-chips-bar');
+      if (tabId === 'chat') {
+        inputArea.classList.add('active');
+        chipsBar.style.display = 'flex';
+        scrollToBottom();
+      } else {
+        inputArea.classList.remove('active');
+        chipsBar.style.display = 'none';
+      }
+
+      if (tabId === 'assessments') {
+        renderAssessmentHistory();
+      }
+    }
+
+    function setColour(hex, rgb, element, skipSave = false) {
+      document.documentElement.style.setProperty('--term-colour', hex);
+      document.documentElement.style.setProperty('--term-rgb', rgb);
+      
+      document.querySelectorAll('.colour-btn').forEach(btn => {
+        if (btn.getAttribute('data-hex') === hex) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // Dynamically update the Apple Touch Icon colour to match
+      const encodedHex = encodeURIComponent(hex);
+      const iconLink = document.getElementById('pwa-icon');
+      if (iconLink) {
+        iconLink.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23050505'/><rect x='6' y='6' width='88' height='88' rx='18' fill='none' stroke='${encodedHex}' stroke-width='2.5' opacity='0.7'/><text y='54' x='50' dominant-baseline='middle' text-anchor='middle' font-size='54' font-weight='bold' fill='${encodedHex}' font-family='monospace'>E_</text></svg>`;
+      }
+
+      if (!skipSave) {
+        try {
+          localStorage.setItem(STORAGE_KEYS.COLOUR_HEX, hex);
+          localStorage.setItem(STORAGE_KEYS.COLOUR_RGB, rgb);
+        } catch (e) {}
+      }
+    }
+
+    function loadSavedTheme() {
+      try {
+        const savedHex = localStorage.getItem(STORAGE_KEYS.COLOUR_HEX);
+        const savedRgb = localStorage.getItem(STORAGE_KEYS.COLOUR_RGB);
+        if (savedHex && savedRgb) {
+          setColour(savedHex, savedRgb, null, true);
+        }
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // 3. STANDALONE APP EXPORTER (SERIALISE DOM TO ECHO.HTML)
+    // =========================================================================
+    function downloadStandaloneApp() {
+      try {
+        // Clone the live DOM so we can export a clean, initialised state
+        const clone = document.documentElement.cloneNode(true);
+
+        // Reset chat history in the exported file so it always boots fresh
+        const clonedChat = clone.querySelector('#chat-history');
+        if (clonedChat) {
+          clonedChat.innerHTML = `<div class="message msg-system">${initialGreetingHTML}</div>`;
+        }
+
+        // Ensure modal and toasts are closed in exported file
+        const clonedModal = clone.querySelector('#install-modal');
+        if (clonedModal) clonedModal.classList.remove('active');
+        const clonedToasts = clone.querySelector('#toast-container');
+        if (clonedToasts) clonedToasts.innerHTML = '';
+
+        // Ensure Chat tab is the default active tab on boot
+        clone.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        const chatTab = clone.querySelector('#tab-chat');
+        if (chatTab) chatTab.classList.add('active');
+
+        clone.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        const navChat = clone.querySelector('#nav-chat');
+        if (navChat) navChat.classList.add('active');
+
+        const inputArea = clone.querySelector('#chat-input-area');
+        if (inputArea) inputArea.classList.add('active');
+        const chipsBar = clone.querySelector('#chat-chips-bar');
+        if (chipsBar) chipsBar.style.display = 'flex';
+
+        const htmlContent = '<!DOCTYPE html>\n' + clone.outerHTML;
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'echo.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+        document.getElementById('install-modal').classList.add('active');
+      } catch (err) {
+        showToast('Export failed. Please try again.');
+      }
+    }
+
+    function closeInstallModal(e) {
+      document.getElementById('install-modal').classList.remove('active');
+    }
+
+    // =========================================================================
+    // 4. SOPHISTICATED LOCAL CONVERSATIONAL ROUTING ENGINE (UK ENGLISH)
+    // =========================================================================
+    let lastUsedResponses = {};
+
+    function getTimeContext() {
+      const hour = new Date().getHours();
+      if (hour >= 5 && hour < 12) return "morning";
+      if (hour >= 12 && hour < 18) return "afternoon";
+      return "evening";
+    }
+
+    function pickNonRepeating(category, pool) {
+      const lastIndex = lastUsedResponses[category];
+      let availableIndices = pool.map((_, idx) => idx).filter(idx => idx !== lastIndex);
+      if (availableIndices.length === 0) availableIndices = [0];
+      const chosenIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+      lastUsedResponses[category] = chosenIndex;
+      return pool[chosenIndex];
+    }
+
+    function generateEchoResponse(rawInput) {
+      const input = rawInput.toLowerCase().trim();
+      const timeOfDay = getTimeContext();
+
+      // 1. SAFETY & CRISIS BOUNDARY PROTOCOL (Highest Priority)
+      const crisisKeywords = ['suicide', 'suicidal', 'kill myself', 'end my life', 'want to die', 'better off dead', 'self harm', 'self-harm', 'hurt myself', 'overdose'];
+      if (crisisKeywords.some(k => input.includes(k))) {
+        return `Please pause with me right now. Because I am a supportive conversational utility and not a healthcare professional, I cannot provide crisis support—and your safety matters deeply.<br><br>If you are in distress or feeling unsafe this ${timeOfDay}, please reach out immediately:<br>• <strong>UK Samaritans:</strong> Call <strong>116 123</strong> (free, 24/7)<br>• <strong>NHS Mental Health Services:</strong> Call <strong>111</strong><br>• <strong>Crisis Text Line:</strong> Text <strong>SHOUT</strong> to <strong>85258</strong><br>• <strong>Emergency:</strong> Call <strong>999</strong> (or 988 in the US/Canada)<br><br>Would it help to sit somewhere safe and take one slow breath while you reach out to someone who can support you today?`;
+      }
+
+      // 2. ESCALATION PREVENTION: INTRUSIVE THOUGHTS & SPIRALLING (Core Directive 3)
+      const spiralKeywords = ['spiral', 'spiralling', 'spiraling', 'intrusive', 'obsess', 'obsessing', 'cant stop thinking', "can't stop thinking", 'looping', 'racing thoughts', 'overthinking', 'losing control'];
+      if (spiralKeywords.some(k => input.includes(k))) {
+        const pool = [
+          `I notice those thoughts are pulling you into a loop this ${timeOfDay}. Rather than analysing the thoughts themselves—which often gives them more momentum—let's gently step out of the stream and anchor in the present moment.<br><br>Look around the room right now: what are <strong>three physical objects</strong> you can see, and what colour or texture are they?`,
+          `When intrusive or racing thoughts gather speed, trying to solve or debate them usually fuels the spiral. Let's practise defusion instead: imagine placing that thought on a leaf and watching it float downstream, while you stay right here on the bank.<br><br>Press your feet firmly into the floor. How does the surface beneath your feet feel right now?`,
+          `Let's interrupt that thought spiral together this ${timeOfDay}. We do not need to unpack the thought itself right now. Instead, bring your focus to your hands.<br><br>Slowly press your thumb against each fingertip one by one. What physical sensation do you notice first?`
+        ];
+        return pickNonRepeating('spiral', pool);
+      }
+
+      // 3. EXPLICIT GROUNDING & SENSORY EXERCISES (5-4-3-2-1)
+      const groundingKeywords = ['grounding', 'ground me', '5-4-3-2-1', '54321', 'sensory', 'present moment', 'centre', 'center'];
+      if (groundingKeywords.some(k => input.includes(k))) {
+        const pool = [
+          `Let's run through the <strong>5-4-3-2-1 sensory grounding</strong> exercise to centre your focus this ${timeOfDay}:<br><br>• <strong>5:</strong> Name five things you can see around you.<br>• <strong>4:</strong> Notice four things you can physically feel (e.g., your feet on the floor, fabric against your skin).<br>• <strong>3:</strong> Listen for three distinct sounds in your environment.<br>• <strong>2:</strong> Identify two things you can smell (or two scents you enjoy).<br>• <strong>1:</strong> Notice one thing you appreciate about the space you are in.<br><br>Take your time. Which of these stands out to you the most right now?`,
+          `Let's anchor your attention in your immediate physical surroundings this ${timeOfDay}.<br><br>Find one object near you and examine it as if you have never seen it before—notice how the light hits it, its edges, and its colour. How would you describe that object in just a few words?`
+        ];
+        return pickNonRepeating('grounding', pool);
+      }
+
+      // 4. BREATHING EXERCISES
+      const breathKeywords = ['breath', 'breathe', 'breathing', 'box breathing', 'inhale', 'exhale', 'hyperventilat'];
+      if (breathKeywords.some(k => input.includes(k))) {
+        const pool = [
+          `Let's practise <strong>Box Breathing</strong> together to steady your nervous system this ${timeOfDay}:<br><br>1. <strong>Inhale</strong> slowly through your nose for a count of <strong>4</strong>.<br>2. <strong>Hold</strong> that breath gently for a count of <strong>4</strong>.<br>3. <strong>Exhale</strong> softly through your mouth for a count of <strong>4</strong>.<br>4. <strong>Rest</strong> at the bottom of the breath for <strong>4</strong>.<br><br>Try two or three cycles at your own pace. How do your shoulders feel as you exhale?`,
+          `Let's try a <strong>Physiological Sigh</strong> to help release physical tension:<br><br>Take two quick inhales through your nose—one deep breath in, followed immediately by a small top-up sip of air—and then let out a long, slow, unhurried exhale through your mouth.<br><br>When you finish that exhale, what do you notice in your chest or jaw?`
+        ];
+        return pickNonRepeating('breathing', pool);
+      }
+
+      // 5. ANXIETY, PANIC & WORRY
+      const anxietyKeywords = ['anxious', 'anxiety', 'panic', 'panicking', 'worried', 'worry', 'worrying', 'nervous', 'on edge', 'uneasy', 'dread', 'scared'];
+      if (anxietyKeywords.some(k => input.includes(k))) {
+        const pool = [
+          `Anxiety often pulls our attention into future "what-ifs", leaving the body tense in the present. Let's bring your awareness back to this ${timeOfDay}.<br><br>Where in your body are you noticing that tension most clearly right now (for example, your shoulders, stomach, or jaw), and can you soften that area by just ten per cent?`,
+          `It is completely valid to feel on edge. When worry builds up this ${timeOfDay}, it can help to separate what is happening right now from what your mind is predicting.<br><br>In this exact moment, looking only at the next ten minutes, what is one small thing that is completely within your control?`,
+          `Thank you for sharing that with me. When anxiety surfaces, our breathing often becomes shallow without us realising.<br><br>Before we reflect further, could you take one slow exhale, let your shoulders drop away from your ears, and tell me what is sitting at the front of your mind today?`
+        ];
+        return pickNonRepeating('anxiety', pool);
+      }
+
+      // 6. OVERWHELM, STRESS & WORK PRESSURE
+      const stressKeywords = ['overwhelm', 'overwhelmed', 'stress', 'stressed', 'stressful', 'work', 'deadline', 'pressure', 'burnout', 'burnt out', 'too much', 'busy'];
+      if (stressKeywords.some(k => input.includes(k))) {
+        const pool = [
+          `When everything feels urgent at once, the mind treats every task as an immediate demand. Let's slow the pace down this ${timeOfDay}.<br><br>If you could set aside everything else for the next fifteen minutes and only tend to <strong>one</strong> small, manageable step, what would that single step be?`,
+          `Carrying a heavy workload or constant pressure is exhausting. Let's create a brief boundary between you and those demands right now.<br><br>What is one expectation you are putting on yourself this ${timeOfDay} that you could gently permission yourself to pause or simplify?`,
+          `I hear how much is on your plate right now. When you feel stretched thin, checking in with your physical baseline is essential.<br><br>Have you had a glass of water, stepped away from your screen, or stretched your back in the last hour?`
+        ];
+        return pickNonRepeating('stress', pool);
+      }
+
+      // 7. SLEEP, FATIGUE & EXHAUSTION
+      const sleepKeywords = ['sleep', 'sleeping', 'insomnia', 'tired', 'exhausted', 'fatigue', 'fatigued', 'drained', 'awake', 'restless', 'shattered', 'knackered'];
+      if (sleepKeywords.some(k => input.includes(k))) {
+        const pool = [
+          `Feeling drained makes everything else feel heavier this ${timeOfDay}. When energy is low, self-compassion is far more helpful than pushing harder.<br><br>What is one way you can lower the bar for yourself over the next few hours so your body and mind have space to rest?`,
+          `Rest isn't only about sleep—it is also about giving your nervous system a break from constant input. This ${timeOfDay}, how might you create five minutes of quiet with no screens or demands?`,
+          `I hear how tired you are feeling. If your mind is restless while your body is exhausted, try scanning slowly from the crown of your head down to your toes, consciously releasing each muscle group.<br><br>Which part of your body feels most ready to let go of tension right now?`
+        ];
+        return pickNonRepeating('sleep', pool);
+      }
+
+      // 8. LOW MOOD, SADNESS & HEAVINESS
+      const lowKeywords = ['sad', 'low', 'depressed', 'down', 'empty', 'numb', 'hopeless', 'heavy', 'lonely', 'alone', 'crying', 'tearful', 'unmotivated'];
+      if (lowKeywords.some(k => input.includes(k))) {
+        const pool = [
+          `I am really glad you shared that with me this ${timeOfDay}. When your mood feels low or heavy, there is no pressure to force positivity—simply acknowledging how you feel without judgement is enough.<br><br>What would feel like the gentlest, kindest thing you could do for yourself in the next ten minutes?`,
+          `When energy and mood dip, even basic tasks can feel like climbing a hill. Let's focus on micro-steps this ${timeOfDay}.<br><br>Could we pick one tiny anchor—such as opening a window for fresh air, having a warm drink, or changing your posture—and notice how that feels?`,
+          `Sitting with a heavy or flat feeling can be very isolating. Please remember you can also use the <strong>Assessments</strong> tab at the bottom of the screen if you would like to log a baseline check-in.<br><br>Right now, what does your body need most: rest, gentle movement, or a quiet distraction?`
+        ];
+        return pickNonRepeating('low', pool);
+      }
+
+      // 9. GREETINGS & CHECK-INS
+      const greetingKeywords = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'morning', 'afternoon', 'evening'];
+      if (greetingKeywords.some(k => input === k || input.startsWith(k + ' '))) {
+        return `Good ${timeOfDay}. I am here with you. How are you feeling in this present moment, and where would it be most helpful to place our focus?`;
+      }
+
+      // 10. GRATITUDE / POSITIVE CLOSING
+      const thanksKeywords = ['thank', 'thanks', 'helpful', 'better', 'calmer', 'good'];
+      if (thanksKeywords.some(k => input.includes(k))) {
+        return `You are very welcome. Taking a moment this ${timeOfDay} to pause and check in with yourself is a meaningful habit. Would you like to explore another grounding reflection, or simply carry this steadier focus into the rest of your ${timeOfDay}?`;
+      }
+
+      // 11. DEFAULT REFLECTIVE DOMAIN-EXPERT FALLBACK
+      const defaultPool = [
+        `Good ${timeOfDay}. Thank you for sharing that with me. Let's keep our focus anchored in the present moment. As you reflect on what you just wrote, what physical sensation or emotion feels most noticeable right now?`,
+        `I hear you. When you pause and observe your current environment this ${timeOfDay}, what is one small thing that helps you feel steady and grounded?`,
+        `Let's take a gentle pause together this ${timeOfDay}. Without judging or trying to fix the situation immediately, what feels like the most important part of this for you right now?`,
+        `Thank you for putting that into words. Sometimes simply naming our experience takes away some of its weight. If you take a slow breath out right now, what feels like a helpful next small step for your ${timeOfDay}?`
+      ];
+      return pickNonRepeating('default', defaultPool);
+    }
+
+    // =========================================================================
+    // 5. CHAT INTERACTION & SCROLL MANAGEMENT
+    // =========================================================================
+    function handleEnter(e) { 
+      if (e.key === 'Enter') { 
+        e.preventDefault(); 
+        sendMessage(); 
+      } 
+    }
+
+    function triggerQuickPrompt(text) {
+      const input = document.getElementById('chat-input');
+      if (input.disabled) return;
+      input.value = text;
+      sendMessage();
+    }
+
+    function resetConversation() {
+      const history = document.getElementById('chat-history');
+      history.innerHTML = `<div class="message msg-system">${initialGreetingHTML}</div>`;
+      scrollToBottom();
+      showToast('Session reset');
+    }
+
+    function scrollToBottom() {
+      setTimeout(() => {
+        const anchor = document.getElementById('scroll-anchor');
+        if (anchor) {
+          anchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+      }, 60);
+    }
+    
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        if (document.getElementById('tab-chat').classList.contains('active')) {
+          scrollToBottom();
+        }
+      });
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const sendBtn = document.getElementById('send-btn');
+      const text = input.value.trim();
+      if (!text) return;
+      
+      const history = document.getElementById('chat-history');
+      
+      // 1. Append User Message
+      const userMsg = document.createElement('div');
+      userMsg.className = 'message msg-user';
+      userMsg.textContent = text;
+      history.appendChild(userMsg);
+      input.value = '';
+      
+      // 2. Append Subtle Typing Indicator
+      const loadMsg = document.createElement('div');
+      loadMsg.className = 'message msg-system';
+      loadMsg.innerHTML = '<div class="loader-dots"><span></span><span></span><span></span></div>';
+      history.appendChild(loadMsg);
+      scrollToBottom();
+      
+      input.disabled = true;
+      sendBtn.disabled = true;
+
+      // 3. Generate Contextual Domain Response
+      const replyHTML = generateEchoResponse(text);
+      
+      setTimeout(() => {
+        if (loadMsg.parentNode) history.removeChild(loadMsg);
+        
+        const sysMsg = document.createElement('div');
+        sysMsg.className = 'message msg-system';
+        sysMsg.innerHTML = replyHTML;
+        history.appendChild(sysMsg);
+        
+        input.disabled = false;
+        sendBtn.disabled = false;
+        scrollToBottom();
+      }, 650);
+    }
+
+    // =========================================================================
+    // 6. CLINICAL ASSESSMENTS ENGINE (PHQ-9, GAD-7, GHQ-12) + LOCAL HISTORY
+    // =========================================================================
+    const assessmentsData = {
+      phq9: {
+        id: "phq9",
+        title: "PHQ-9",
+        maxScore: 27,
+        desc: "Over the last 2 weeks, how often have you been bothered by any of the following problems?",
+        options: [
+          { text: "Not at all", score: 0 },
+          { text: "Several days", score: 1 },
+          { text: "More than half the days", score: 2 },
+          { text: "Nearly every day", score: 3 }
+        ],
+        questions: [
+          "Little interest or pleasure in doing things",
+          "Feeling down, depressed, or hopeless",
+          "Trouble falling or staying asleep, or sleeping too much",
+          "Feeling tired or having little energy",
+          "Poor appetite or overeating",
+          "Feeling bad about yourself — or that you are a failure or have let yourself or your family down",
+          "Trouble concentrating on things, such as reading the newspaper or watching television",
+          "Moving or speaking so slowly that other people could have noticed? Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual",
+          "Thoughts that you would be better off dead or of hurting yourself in some way"
+        ],
+        scoreLogic: (score) => {
+          if (score <= 4) return "Minimal Depression (0–4)";
+          if (score <= 9) return "Mild Depression (5–9)";
+          if (score <= 14) return "Moderate Depression (10–14)";
+          if (score <= 19) return "Moderately Severe Depression (15–19)";
+          return "Severe Depression (20–27)";
+        }
+      },
+      gad7: {
+        id: "gad7",
+        title: "GAD-7",
+        maxScore: 21,
+        desc: "Over the last 2 weeks, how often have you been bothered by the following problems?",
+        options: [
+          { text: "Not at all", score: 0 },
+          { text: "Several days", score: 1 },
+          { text: "More than half the days", score: 2 },
+          { text: "Nearly every day", score: 3 }
+        ],
+        questions: [
+          "Feeling nervous, anxious, or on edge",
+          "Not being able to stop or control worrying",
+          "Worrying too much about different things",
+          "Trouble relaxing",
+          "Being so restless that it is hard to sit still",
+          "Becoming easily annoyed or irritable",
+          "Feeling afraid, as if something awful might happen"
+        ],
+        scoreLogic: (score) => {
+          if (score <= 4) return "Minimal Anxiety (0–4)";
+          if (score <= 9) return "Mild Anxiety (5–9)";
+          if (score <= 14) return "Moderate Anxiety (10–14)";
+          return "Severe Anxiety (15–21)";
+        }
+      },
+      ghq12: {
+        id: "ghq12",
+        title: "GHQ-12",
+        maxScore: 36,
+        desc: "Have you recently experienced the following? (Scored via standard Likert 0–3 method, where higher scores indicate greater distress).",
+        questions: [
+          {
+            q: "Been able to concentrate on whatever you're doing?",
+            options: [
+              { text: "Better than usual", score: 0 },
+              { text: "Same as usual", score: 1 },
+              { text: "Less than usual", score: 2 },
+              { text: "Much less than usual", score: 3 }
+            ]
+          },
+          {
+            q: "Lost much sleep over worry?",
+            options: [
+              { text: "Not at all", score: 0 },
+              { text: "No more than usual", score: 1 },
+              { text: "Rather more than usual", score: 2 },
+              { text: "Much more than usual", score: 3 }
+            ]
+          },
+          {
+            q: "Felt that you are playing a useful part in things?",
+            options: [
+              { text: "More so than usual", score: 0 },
+              { text: "Same as usual", score: 1 },
+              { text: "Less so than usual", score: 2 },
+              { text: "Much less useful", score: 3 }
+            ]
+          },
+          {
+            q: "Felt capable of making decisions about things?",
+            options: [
+              { text: "More so than usual", score: 0 },
+              { text: "Same as usual", score: 1 },
+              { text: "Less so than usual", score: 2 },
+              { text: "Much less capable", score: 3 }
+            ]
+          },
+          {
+            q: "Felt constantly under strain?",
+            options: [
+              { text: "Not at all", score: 0 },
+              { text: "No more than usual", score: 1 },
+              { text: "Rather more than usual", score: 2 },
+              { text: "Much more than usual", score: 3 }
+            ]
+          },
+          {
+            q: "Felt you couldn't overcome your difficulties?",
+            options: [
+              { text: "Not at all", score: 0 },
+              { text: "No more than usual", score: 1 },
+              { text: "Rather more than usual", score: 2 },
+              { text: "Much more than usual", score: 3 }
+            ]
+          },
+          {
+            q: "Been able to enjoy your normal day-to-day activities?",
+            options: [
+              { text: "More so than usual", score: 0 },
+              { text: "Same as usual", score: 1 },
+              { text: "Less so than usual", score: 2 },
+              { text: "Much less than usual", score: 3 }
+            ]
+          },
+          {
+            q: "Been able to face up to your problems?",
+            options: [
+              { text: "More so than usual", score: 0 },
+              { text: "Same as usual", score: 1 },
+              { text: "Less able than usual", score: 2 },
+              { text: "Much less able", score: 3 }
+            ]
+          },
+          {
+            q: "Been feeling unhappy and depressed?",
+            options: [
+              { text: "Not at all", score: 0 },
+              { text: "No more than usual", score: 1 },
+              { text: "Rather more than usual", score: 2 },
+              { text: "Much more than usual", score: 3 }
+            ]
+          },
+          {
+            q: "Been losing confidence in yourself?",
+            options: [
+              { text: "Not at all", score: 0 },
+              { text: "No more than usual", score: 1 },
+              { text: "Rather more than usual", score: 2 },
+              { text: "Much more than usual", score: 3 }
+            ]
+          },
+          {
+            q: "Been thinking of yourself as a worthless person?",
+            options: [
+              { text: "Not at all", score: 0 },
+              { text: "No more than usual", score: 1 },
+              { text: "Rather more than usual", score: 2 },
+              { text: "Much more than usual", score: 3 }
+            ]
+          },
+          {
+            q: "Been feeling reasonably happy, all things considered?",
+            options: [
+              { text: "More so than usual", score: 0 },
+              { text: "About the same as usual", score: 1 },
+              { text: "Less so than usual", score: 2 },
+              { text: "Much less than usual", score: 3 }
+            ]
+          }
+        ],
+        scoreLogic: (score) => {
+          if (score <= 11) return "Typical / Low Distress (0–11)";
+          if (score <= 15) return "Mild Psychological Distress (12–15)";
+          if (score <= 20) return "Moderate Psychological Distress (16–20)";
+          return "Severe Psychological Distress (21–36)";
+        }
+      }
+    };
+
+    let currentAssessment = null;
+
+    function showAssessmentList() {
+      document.getElementById('assessment-list').style.display = 'block';
+      document.getElementById('assessment-engine').style.display = 'none';
+      document.getElementById('assessment-result').style.display = 'none';
+      document.getElementById('submit-assessment-btn').style.display = 'block';
+      renderAssessmentHistory();
+    }
+
+    function loadAssessment(id) {
+      currentAssessment = assessmentsData[id];
+      document.getElementById('assessment-list').style.display = 'none';
+      document.getElementById('assessment-engine').style.display = 'block';
+      document.getElementById('assessment-result').style.display = 'none';
+      document.getElementById('submit-assessment-btn').style.display = 'block';
+      
+      document.getElementById('assessment-title').innerText = currentAssessment.title;
+      document.getElementById('assessment-desc').innerText = currentAssessment.desc;
+      
+      const form = document.getElementById('assessment-form');
+      form.innerHTML = '';
+      
+      currentAssessment.questions.forEach((item, index) => {
+        const questionText = typeof item === 'string' ? item : item.q;
+        const optionsList = typeof item === 'string' ? currentAssessment.options : item.options;
+
+        const block = document.createElement('div');
+        block.className = 'question-block';
+        block.innerHTML = `<div class="question-text">${index + 1}. ${questionText}</div>`;
+        
+        optionsList.forEach(opt => {
+          const label = document.createElement('label');
+          label.className = 'option-label';
+          label.innerHTML = `
+            <input type="radio" name="q${index}" value="${opt.score}" onchange="selectOption(this)">
+            <span>${opt.text}</span>
+            <span class="option-score-tag">+${opt.score}</span>
+          `;
+          block.appendChild(label);
+        });
+        
+        form.appendChild(block);
+      });
+      
+      document.getElementById('tab-assessments').scrollTop = 0;
+    }
+
+    function selectOption(radio) {
+      const labels = radio.closest('.question-block').querySelectorAll('.option-label');
+      labels.forEach(l => l.classList.remove('selected'));
+      radio.parentElement.classList.add('selected');
+    }
+
+    function calculateScore() {
+      let total = 0;
+      let answered = 0;
+      const totalQuestions = currentAssessment.questions.length;
+      
+      for (let i = 0; i < totalQuestions; i++) {
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        if (selected) {
+          total += parseInt(selected.value, 10);
+          answered++;
+        }
+      }
+      
+      if (answered < totalQuestions) {
+        showToast(`Please answer all ${totalQuestions} questions (${answered}/${totalQuestions} completed).`);
+        return;
+      }
+      
+      const severity = currentAssessment.scoreLogic(total);
+      saveAssessmentResult(currentAssessment.title, total, currentAssessment.maxScore, severity);
+      
+      document.getElementById('assessment-form').innerHTML = '';
+      document.getElementById('submit-assessment-btn').style.display = 'none';
+      
+      const resultBox = document.getElementById('assessment-result');
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = `
+        <div class="result-box">
+          <div style="font-size: 13px; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px;">${currentAssessment.title} Total Score</div>
+          <div class="result-score">${total} <span style="font-size: 20px; opacity: 0.6;">/ ${currentAssessment.maxScore}</span></div>
+          <div class="result-severity">${severity}</div>
+          <div style="font-size: 12.5px; color: #a1a1a6; margin-top: 14px; line-height: 1.45;">
+            Saved to your device history. Please note: This questionnaire is an informational screening tool and does not constitute a formal clinical diagnosis.
+          </div>
+          <button class="secondary-btn" style="margin-top: 18px;" onclick="showAssessmentList()">Return to Clinical Tools</button>
+        </div>
+      `;
+      
+      document.getElementById('tab-assessments').scrollTop = 0;
+    }
+
+    function getAssessmentHistory() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.ASSESSMENT_HISTORY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveAssessmentResult(tool, score, maxScore, severity) {
+      try {
+        const history = getAssessmentHistory();
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString('en-GB', {
+          day: '2-digit', month: 'short', year: 'numeric'
+        }) + ' • ' + now.toLocaleTimeString('en-GB', {
+          hour: '2-digit', minute: '2-digit'
+        });
+
+        history.unshift({
+          tool,
+          score,
+          maxScore,
+          severity,
+          date: formattedDate
+        });
+
+        // Keep up to 30 recent entries
+        localStorage.setItem(STORAGE_KEYS.ASSESSMENT_HISTORY, JSON.stringify(history.slice(0, 30)));
+      } catch (e) {}
+    }
+
+    function clearAssessmentHistory() {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.ASSESSMENT_HISTORY);
+        renderAssessmentHistory();
+        showToast('Assessment history cleared');
+      } catch (e) {}
+    }
+
+    function renderAssessmentHistory() {
+      const container = document.getElementById('assessment-history-container');
+      if (!container) return;
+
+      const history = getAssessmentHistory();
+      if (history.length === 0) {
+        container.innerHTML = `
+          <div style="background: #121214; border: 1px dashed #2c2c30; border-radius: 10px; padding: 18px; text-align: center; color: #8e8e93; font-size: 13.5px;">
+            No completed assessments saved yet. Complete a questionnaire above to log your baseline.
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      history.forEach(item => {
+        html += `
+          <div class="history-card">
+            <div class="history-meta">
+              <span class="history-title">${item.tool}</span>
+              <span class="history-severity">${item.severity}</span>
+              <span class="history-date">${item.date}</span>
+            </div>
+            <div class="history-score-pill">${item.score}/${item.maxScore}</div>
+          </div>
+        `;
+      });
+
+      html += `<button class="secondary-btn danger" onclick="clearAssessmentHistory()">Clear Saved History</button>`;
+      container.innerHTML = html;
+    }
+  </script>
+
+
+  <!-- Offline Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('ECHO PWA: Service Worker registered successfully (scope: ' + reg.scope + ')'))
+          .catch(err => console.warn('ECHO PWA: Service Worker registration failed:', err));
+      });
+    }
+
+    // iOS Standalone Mode Detection
+    window.addEventListener('DOMContentLoaded', () => {
+      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      if (isStandalone) {
+        document.body.classList.add('ios-standalone');
+        console.log('ECHO running in native standalone mode.');
+      }
+    });
+  </script>
+</body></html>

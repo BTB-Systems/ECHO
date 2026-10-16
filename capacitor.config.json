@@ -1,0 +1,13 @@
+{
+  "appId": "uk.nhs.mft.dts.echo",
+  "appName": "ECHO",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile",
+    "backgroundColor": "#000000",
+    "allowsLinkPreview": false,
+    "scrollEnabled": false
+  }
+}
